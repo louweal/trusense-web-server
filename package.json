@@ -15,7 +15,8 @@
     "type": "commonjs",
     "main": "script.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start": "node script.js",
+        "build": "echo 'No build needed'"
     },
     "dependencies": {
         "@hashgraph/sdk": "^2.74.0",
