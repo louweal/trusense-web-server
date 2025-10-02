@@ -1,2 +1,4 @@
 .env
 sketch.ino
+node_modules
+package-lock.json
