@@ -1,6 +1,8 @@
-import express from "express";
-import bodyParser from "body-parser";
-import { Client, TopicMessageSubmitTransaction, PrivateKey } from "@hashgraph/sdk";
+// script.js
+const express = require("express");
+const bodyParser = require("body-parser");
+const { Client, TopicMessageSubmitTransaction, PrivateKey } = require("@hashgraph/sdk");
+require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
