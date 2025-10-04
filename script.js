@@ -17,7 +17,7 @@ const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 app.post("/data", async (req, res) => {
     try {
         const { ADC, temperature } = req.body;
-        const message = JSON.stringify({ ADC, temperature, timestamp: Date.now() });
+        const message = JSON.stringify({ ADC, temperature });
 
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
