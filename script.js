@@ -17,7 +17,14 @@ const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 app.post("/data", async (req, res) => {
     try {
         const { ADC, temperature } = req.body;
-        const message = JSON.stringify({ ADC, temperature, timestamp: Date.now() });
+
+        //create random humidity
+        const humidity = Math.floor(Math.random() * 100);
+
+        // create random air pressure between 950 and 1050
+        const airPressure = Math.floor(Math.random() * 100) + 950;
+
+        const message = JSON.stringify({ ADC, temperature, humidity, airPressure, timestamp: Date.now() });
 
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
