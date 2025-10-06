@@ -14,15 +14,36 @@ const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
 
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
+function getHumidityForTemperature(temp) {
+    // base value: inversely related to temperature
+    let base = 80 - (temp - 22) * 1.5; // as temp rises from 22→30, humidity drops ~12%
+
+    // add small random fluctuation
+    const delta = Math.random() * 4 - 2; // ±2%
+
+    lastHumidity = Math.min(90, Math.max(30, base + delta));
+    return Math.round(lastHumidity);
+}
+
+function getAirPressureForTemperature(temp) {
+    // small negative correlation (optional)
+    let base = 1015 - (temp - 22) * 0.5; // small drop as temp rises
+
+    // add small random fluctuation
+    const delta = Math.random() * 2 - 1; // ±1 hPa
+    lastAirPressure = Math.min(1050, Math.max(950, base + delta));
+    return Math.round(lastAirPressure);
+}
+
 app.post("/data", async (req, res) => {
     try {
         const { topicId, ADC, temperature } = req.body;
 
         //create random humidity
-        const humidity = Math.floor(Math.random() * 100);
+        const humidity = getHumidityForTemperature(temperature);
 
         // create random air pressure between 950 and 1050
-        const airPressure = Math.floor(Math.random() * 100) + 950;
+        const airPressure = getAirPressureForTemperature(temperature);
 
         const message = JSON.stringify({ ADC, temperature, humidity, airPressure, timestamp: Date.now() });
 
