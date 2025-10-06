@@ -1,4 +1,5 @@
 // script.js
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const { Client, TopicMessageSubmitTransaction, PrivateKey } = require("@hashgraph/sdk");
@@ -10,13 +11,12 @@ app.use(bodyParser.json());
 // 🔑 Load credentials from environment variables
 const operatorId = process.env.HEDERA_OPERATOR_ID;
 const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
-const topicId = process.env.HEDERA_TOPIC_ID;
 
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
 app.post("/data", async (req, res) => {
     try {
-        const { ADC, temperature } = req.body;
+        const { topicId, ADC, temperature } = req.body;
 
         //create random humidity
         const humidity = Math.floor(Math.random() * 100);
