@@ -68,6 +68,11 @@ app.post("/data", async (req, res) => {
 app.post("/settings/:topicId", (req, res) => {
     const topicId = req.params.topicId;
     const { interval } = req.body;
+
+    if (interval < 1000) {
+        return res.status(400).json({ error: "Interval must be greater than 1000 ms (1 second)" });
+    }
+
     settings[topicId]["interval"] = interval;
     res.json({ status: "ok", received: { interval } });
 });
