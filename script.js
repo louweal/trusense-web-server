@@ -16,6 +16,10 @@ const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
 
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
+const settings = {
+    "0.0.6963500": { interval: 30000 },
+};
+
 function getHumidityForTemperature(temp) {
     // base value: inversely related to temperature
     let base = 80 - (temp - 22) * 1.5; // as temp rises from 22→30, humidity drops ~12%
@@ -61,9 +65,20 @@ app.post("/data", async (req, res) => {
     }
 });
 
-app.post("/settings", (req, res) => {
-    const { topicId, interval } = req.body;
-    res.json({ status: "ok", received: { topicId, interval } });
+app.post("/settings/:topicId", (req, res) => {
+    const topicId = req.params.topicId;
+    const { interval } = req.body;
+    settings[topicId]["interval"] = interval;
+    res.json({ status: "ok", received: { interval } });
+});
+
+app.get("/settings/:topicId", (req, res) => {
+    const id = req.params.topicId;
+    if (settings[id]) {
+        res.json(settings[id]);
+    } else {
+        res.status(404).json({ error: "Sensor not found" });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
