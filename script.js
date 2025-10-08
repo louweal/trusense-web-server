@@ -24,7 +24,7 @@ app.post("/data", async (req, res) => {
     try {
         const { topicId, temperature, humidity, pressure } = req.body;
 
-        const message = JSON.stringify({ ADC, temperature, humidity, airPressure: pressure, timestamp: Date.now() });
+        const message = JSON.stringify({ temperature, humidity, airPressure: pressure, timestamp: Date.now() });
 
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
