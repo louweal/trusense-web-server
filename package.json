@@ -21,6 +21,7 @@
     "dependencies": {
         "@hashgraph/sdk": "^2.74.0",
         "body-parser": "^2.2.0",
+        "cors": "^2.8.5",
         "dotenv": "^17.2.3",
         "express": "^5.1.0"
     }

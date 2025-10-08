@@ -2,11 +2,13 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 const { Client, TopicMessageSubmitTransaction, PrivateKey } = require("@hashgraph/sdk");
 require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
+app.use(cors());
 
 // 🔑 Load credentials from environment variables
 const operatorId = process.env.HEDERA_OPERATOR_ID;
@@ -57,6 +59,12 @@ app.post("/data", async (req, res) => {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
+});
+
+app.post("/interval", (req, res) => {
+    const { interval } = req.body;
+    console.log("Received interval:", interval);
+    res.json({ status: "ok", received: interval });
 });
 
 const PORT = process.env.PORT || 3000;
