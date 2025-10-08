@@ -61,10 +61,9 @@ app.post("/data", async (req, res) => {
     }
 });
 
-app.post("/interval", (req, res) => {
-    const { interval } = req.body;
-    console.log("Received interval:", interval);
-    res.json({ status: "ok", received: interval });
+app.post("/settings", (req, res) => {
+    const { topicId, interval } = req.body;
+    res.json({ status: "ok", received: { topicId, interval } });
 });
 
 const PORT = process.env.PORT || 3000;
