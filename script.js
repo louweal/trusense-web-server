@@ -17,7 +17,7 @@ const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
 const settings = {
-    "0.0.6963500": { interval: 30000 },
+    "0.0.7001056": { interval: 30000 },
 };
 
 app.post("/data", async (req, res) => {
