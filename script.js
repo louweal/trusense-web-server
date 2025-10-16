@@ -40,29 +40,31 @@ app.post("/data", async (req, res) => {
 
         const message = JSON.stringify(msg);
 
-        const minTemperature = settings[topicId]["minTemperature"] || -9999;
-        const maxTemperature = settings[topicId]["maxTemperature"] || 9999;
-        const minHumidity = settings[topicId]["minHumidity"] || -9999;
-        const maxHumidity = settings[topicId]["maxHumidity"] || 9999;
-        const minPressure = settings[topicId]["minPressure"] || -9999;
-        const maxPressure = settings[topicId]["maxPressure"] || 9999;
+        if (settings[topicId]) {
+            const minTemperature = settings[topicId]["minTemperature"] || -9999;
+            const maxTemperature = settings[topicId]["maxTemperature"] || 9999;
+            const minHumidity = settings[topicId]["minHumidity"] || -9999;
+            const maxHumidity = settings[topicId]["maxHumidity"] || 9999;
+            const minPressure = settings[topicId]["minPressure"] || -9999;
+            const maxPressure = settings[topicId]["maxPressure"] || 9999;
+
+            if (temperature < minTemperature || temperature > maxTemperature) {
+                sendEmail(topicId, "Temperature", temperature, minTemperature, maxTemperature, msg.timestamp);
+            }
+
+            if (humidity < minHumidity || humidity > maxHumidity) {
+                sendEmail(topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
+            }
+
+            if (pressure < minPressure || pressure > maxPressure) {
+                sendEmail(topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
+            }
+        }
 
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
             message,
         }).execute(client);
-
-        if (temperature < minTemperature || temperature > maxTemperature) {
-            sendEmail(topicId, "Temperature", temperature, minTemperature, maxTemperature, msg.timestamp);
-        }
-
-        if (humidity < minHumidity || humidity > maxHumidity) {
-            sendEmail(topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
-        }
-
-        if (pressure < minPressure || pressure > maxPressure) {
-            sendEmail(topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
-        }
 
         res.json({ status: "ok", sent: message, txId: tx.transactionId.toString() });
     } catch (err) {
