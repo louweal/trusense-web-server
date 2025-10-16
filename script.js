@@ -41,12 +41,12 @@ app.post("/data", async (req, res) => {
         const message = JSON.stringify(msg);
 
         if (settings[topicId]) {
-            const minTemperature = settings[topicId]["minTemperature"] || -9999;
-            const maxTemperature = settings[topicId]["maxTemperature"] || 9999;
-            const minHumidity = settings[topicId]["minHumidity"] || -9999;
-            const maxHumidity = settings[topicId]["maxHumidity"] || 9999;
-            const minPressure = settings[topicId]["minPressure"] || -9999;
-            const maxPressure = settings[topicId]["maxPressure"] || 9999;
+            const minTemperature = settings[topicId]["minTemp"] || -9999;
+            const maxTemperature = settings[topicId]["maxTemp"] || 9999;
+            const minHumidity = settings[topicId]["minHum"] || -9999;
+            const maxHumidity = settings[topicId]["maxHum"] || 9999;
+            const minPressure = settings[topicId]["minPres"] || -9999;
+            const maxPressure = settings[topicId]["maxPres"] || 9999;
 
             if (temperature < minTemperature || temperature > maxTemperature) {
                 sendEmail(topicId, "Temperature", temperature, minTemperature, maxTemperature, msg.timestamp);
