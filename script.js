@@ -78,6 +78,7 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
         const readableDate = new Date(timestamp).toLocaleString();
         const unit = units[metric];
 
+        const subject = `[${settings[topicId]["name"]}] ${metric} out of range (${value})`;
         const html = `
             <p>Value measured at ${readableDate}: ${value} ${unit} exceeding the limits:</p>
             <p>Min: ${min} ${unit}</p>
@@ -91,12 +92,13 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
         const msg = {
             to: settings[topicId]["email"],
             from: process.env.MAIL_SENDER,
-            subject: `[${settings[topicId]["name"]}] ${metric} out of range (${value})`,
+            subject: subject,
             text: text,
             html: html,
         };
 
-        sgMail.send(msg);
+        // sgMail.send(msg);
+        console.log("Ready to send email:", subject);
     } catch (err) {
         console.error(err);
     }
@@ -111,9 +113,10 @@ app.post("/settings/:topicId", (req, res) => {
         settings[topicId] = {};
     }
 
-    for (const key in req.body) {
-        if (fields[key] != null) {
-            settings[topicId][key] = fields[key];
+    for (const [key, value] of Object.entries(req.body)) {
+        if (value != null) {
+            settings[topicId][key] = value;
+            console.log("Setting stored: " + value);
         }
     }
 
@@ -136,9 +139,10 @@ app.post("/device-settings/:topicId", (req, res) => {
         deviceSettings[topicId] = {};
     }
 
-    for (const key in req.body) {
-        if (fields[key] != null) {
-            deviceSettings[topicId][key] = fields[key];
+    for (const [key, value] of Object.entries(req.body)) {
+        if (value != null) {
+            deviceSettings[topicId][key] = value;
+            console.log("Updated device settings: " + key + ":" + value);
         }
     }
 
