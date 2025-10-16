@@ -76,10 +76,9 @@ app.post("/data", async (req, res) => {
 function sendEmail(topicId, metric, value, min, max, timestamp) {
     if (!settings[topicId]) return;
     if (!settings[topicId]["email"]) return; // check if email is set
-    if (!settings[topicId]["lastAlert"]) return;
 
     // check if email has been sent less than 4 hours
-    if (settings[topicId]["lastAlert"][metric]) {
+    if (settings[topicId]["lastAlert"] && settings[topicId]["lastAlert"][metric]) {
         if (timestamp < settings[topicId]["lastAlert"][metric] + 4 * 60 * 60 * 1000) {
             console.log("Already send email less than 4 hours ago");
             return;
