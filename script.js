@@ -79,7 +79,11 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
 
     // create lastAlert object if it doesn't exist
     if (!settings[topicId]["lastAlert"]) {
-        settings[topicId]["lastAlert"] = {};
+        settings[topicId]["lastAlert"] = {
+            Temperature: 0,
+            Humidity: 0,
+            "Air Pressure": 0,
+        };
     }
 
     // check if email has been sent less than 4 hours
