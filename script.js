@@ -132,6 +132,7 @@ app.post("/settings/:topicId", (req, res) => {
         if (value != null) {
             settings[topicId][key] = value;
             console.log("Setting stored: " + value);
+            console.log(settings);
         }
     }
 
