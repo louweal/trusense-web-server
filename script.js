@@ -74,6 +74,14 @@ app.post("/data", async (req, res) => {
 });
 
 function sendEmail(topicId, metric, value, min, max, timestamp) {
+    // check if email has been sent less than 4 hours
+    if (settings[topicId]["lastAlert"][metric]) {
+        if (timestamp < settings[topicId]["lastAlert"][metric] + 4 * 60 * 60 * 1000) {
+            console.log("Already send email less than 4 hours ago");
+            return;
+        }
+    }
+
     try {
         const readableDate = new Date(timestamp).toLocaleString();
         const unit = units[metric];
@@ -99,6 +107,9 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
 
         // sgMail.send(msg);
         console.log("Ready to send email:", subject);
+
+        // store timestamp of mail
+        settings[topicId]["lastAlert"][metric] = timestamp;
     } catch (err) {
         console.error(err);
     }
