@@ -117,8 +117,8 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
             html: html,
         };
 
-        // sgMail.send(msg);
-        console.log("Ready to send email:", subject);
+        console.log("Going to send email:", subject);
+        sgMail.send(msg);
 
         // store timestamp of mail
         settings[topicId]["lastAlert"][metric] = timestamp;
