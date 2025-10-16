@@ -1,5 +1,5 @@
 // script.js
-
+const sgMail = require("@sendgrid/mail");
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -10,26 +10,59 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 // 🔑 Load credentials from environment variables
 const operatorId = process.env.HEDERA_OPERATOR_ID;
 const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
 
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
-const settings = {
-    "0.0.7001056": { interval: 30000 },
+const settings = {};
+
+const deviceSettings = {
+    "0.0.7001056": {
+        interval: 30000,
+    },
+};
+
+const units = {
+    Temperature: "°C",
+    Humidity: "%",
+    "Air Pressure": "hPa",
 };
 
 app.post("/data", async (req, res) => {
     try {
         const { topicId, temperature, humidity, pressure } = req.body;
 
-        const message = JSON.stringify({ temperature, humidity, airPressure: pressure, timestamp: Date.now() });
+        const msg = { temperature, humidity, airPressure: pressure, timestamp: Date.now() };
+
+        const message = JSON.stringify(msg);
+
+        const minTemperature = settings[topicId]["minTemperature"] || -9999;
+        const maxTemperature = settings[topicId]["maxTemperature"] || 9999;
+        const minHumidity = settings[topicId]["minHumidity"] || -9999;
+        const maxHumidity = settings[topicId]["maxHumidity"] || 9999;
+        const minPressure = settings[topicId]["minPressure"] || -9999;
+        const maxPressure = settings[topicId]["maxPressure"] || 9999;
 
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
             message,
         }).execute(client);
+
+        if (temperature < minTemperature || temperature > maxTemperature) {
+            sendEmail(topicId, "Temperature", temperature, minTemperature, maxTemperature, msg.timestamp);
+        }
+
+        if (humidity < minHumidity || humidity > maxHumidity) {
+            sendEmail(topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
+        }
+
+        if (pressure < minPressure || pressure > maxPressure) {
+            sendEmail(topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
+        }
 
         res.json({ status: "ok", sent: message, txId: tx.transactionId.toString() });
     } catch (err) {
@@ -38,25 +71,76 @@ app.post("/data", async (req, res) => {
     }
 });
 
+function sendEmail(topicId, metric, value, min, max, timestamp) {
+    try {
+        const readableDate = new Date(timestamp).toLocaleString();
+        const unit = units[metric];
+
+        const html = `
+            <p>Value measured at ${readableDate}: ${value} ${unit} exceeding the limits:</p>
+            <p>Min: ${min} ${unit}</p>
+            <p>Max: ${max} ${unit}</p>
+            <p><a href="https://trusense.africa/topic/${topicId}">Inspect the charts.</a></p>
+            <p><a href="https://trusense.africa/login">Login into your Dashboard to update the alerts.</a></p>
+        `;
+
+        const text = html.replace(/<[^>]+>/g, "");
+
+        const msg = {
+            to: settings[topicId]["email"],
+            from: process.env.MAIL_SENDER,
+            subject: `[${settings[topicId]["name"]}] ${metric} out of range (${value})`,
+            text: text,
+            html: html,
+        };
+
+        sgMail.send(msg);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 app.post("/settings/:topicId", (req, res) => {
     const topicId = req.params.topicId;
-    const { interval } = req.body;
 
-    if (interval < 1000) {
-        return res.status(400).json({ error: "Interval must be greater than 1000 ms (1 second)" });
+    // Check if the topic exists
+    if (!settings[topicId]) {
+        // push empty new topic settings
+        settings[topicId] = {};
     }
 
-    settings[topicId]["interval"] = interval;
-    res.json({ status: "ok", received: { interval } });
+    for (const key in req.body) {
+        if (fields[key] != null) {
+            settings[topicId][key] = fields[key];
+        }
+    }
+
+    res.json({ status: "ok", received: { body: req.body } });
 });
 
-app.get("/settings/:topicId", (req, res) => {
+app.get("/device-settings/:topicId", (req, res) => {
     const id = req.params.topicId;
-    if (settings[id]) {
-        res.json(settings[id]);
+    if (deviceSettings[id]) {
+        res.json(deviceSettings[id]);
     } else {
-        res.status(404).json({ error: "Sensor not found" });
+        res.status(404).json({ error: "Device settings not found" });
     }
+});
+
+app.post("/device-settings/:topicId", (req, res) => {
+    const topicId = req.params.topicId;
+    if (!deviceSettings[topicId]) {
+        // push empty new topic settings
+        deviceSettings[topicId] = {};
+    }
+
+    for (const key in req.body) {
+        if (fields[key] != null) {
+            deviceSettings[topicId][key] = fields[key];
+        }
+    }
+
+    res.json({ status: "ok", received: { body: req.body } });
 });
 
 const PORT = process.env.PORT || 3000;
