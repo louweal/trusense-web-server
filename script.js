@@ -78,13 +78,14 @@ app.post("/data", async (req, res) => {
     // get subscribers from database if missing (e.g. after server restart)
     if (!subscribers[topicId]) {
         // create subscribers object
-        subscribers[topicId] = {};
 
-        const subscribers = await fetchSensorSubscribers(topicId);
+        const subscriberData = await fetchSensorSubscribers(topicId);
+
+        subscribers[topicId] = {}; // create empty object
 
         // add all subscribers from database to subscribers object
-        for (const subscriber of subscribers) {
-            subscribers[subscriber.topicId][subscriber.subscriberId] = subscriber;
+        for (const s of subscriberData) {
+            subscribers[s.topicId][s.subscriberId] = s;
         }
     }
 
