@@ -68,7 +68,7 @@ app.post("/data", async (req, res) => {
 
         // get subscribers from database if missing (e.g. after server restart)
         if (!subscribers[topicId]) {
-            const subscribers = await fetchSensorSettings(topicId);
+            const subscribers = await fetchSensorSubscribers(topicId);
 
             // add all subscribers from database to subscribers object
             for (const subscriber of subscribers) {
