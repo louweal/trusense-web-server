@@ -97,7 +97,8 @@ app.post("/data", async (req, res) => {
         console.log("Num subscribers: ", numTopicSubscribers);
 
         if (numTopicSubscribers > 0) {
-            for (const subscriber of topicSubscribers) {
+            // loop through all subscribers
+            for (const subscriber of Object.values(topicSubscribers)) {
                 const subscriberId = subscriber["subscriberId"];
 
                 const minTemperature = subscriber[subscriberId]["minTemp"] || -9999;
