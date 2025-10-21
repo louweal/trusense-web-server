@@ -92,9 +92,11 @@ app.post("/data", async (req, res) => {
     // send alerts to subscribers if needed
     if (subscribers[topicId]) {
         const topicSubscribers = subscribers[topicId];
-        console.log("Num subscribers: ", topicSubscribers.length);
+        const numTopicSubscribers = Object.keys(topicSubscribers).length;
 
-        if (topicSubscribers.length > 0) {
+        console.log("Num subscribers: ", numTopicSubscribers);
+
+        if (numTopicSubscribers > 0) {
             for (const subscriber of topicSubscribers) {
                 const subscriberId = subscriber["subscriberId"];
 
