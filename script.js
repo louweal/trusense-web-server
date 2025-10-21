@@ -4,6 +4,10 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const { Client, TopicMessageSubmitTransaction, PrivateKey } = require("@hashgraph/sdk");
+const { Pool } = require("pg");
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
 require("dotenv").config();
 
 const app = express();
@@ -26,12 +30,33 @@ const deviceSettings = {
     },
 };
 
+// fetch settings from database if missing (e.g. after server restart)
+async function fetchSensorSettings(topicId) {
+    console.log("Fetching settings... for topic ", topicId);
+    try {
+        const query = `
+    SELECT *
+    FROM sensors
+    WHERE topicId = $1
+    ORDER BY updatedAt DESC
+    LIMIT 1;
+  `;
+        const { rows } = await pool.query(query, [topicId]);
+        console.log(rows[0]);
+        return rows[0] || null;
+    } catch (err) {
+        console.log(err);
+        return {}; // avoids trying to fetch again
+    }
+}
+
 const units = {
     Temperature: "°C",
     Humidity: "%",
     "Air Pressure": "hPa",
 };
 
+// post route for sensor to send data
 app.post("/data", async (req, res) => {
     try {
         const { topicId, temperature, humidity, pressure } = req.body;
@@ -39,6 +64,11 @@ app.post("/data", async (req, res) => {
         const msg = { temperature, humidity, airPressure: pressure, timestamp: Date.now() };
 
         const message = JSON.stringify(msg);
+
+        // get settings (e.g. after server restart)
+        if (!settings[topicId]) {
+            settings[topicId] = await fetchSensorSettings(topicId);
+        }
 
         if (settings[topicId]) {
             const minTemperature = settings[topicId]["minTemp"] || -9999;
@@ -127,6 +157,7 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
     }
 }
 
+// post route for website to send settings
 app.post("/settings/:topicId", (req, res) => {
     const topicId = req.params.topicId;
 
@@ -147,6 +178,7 @@ app.post("/settings/:topicId", (req, res) => {
     res.json({ status: "ok", received: { body: req.body } });
 });
 
+// get route for sensor to get device settings
 app.get("/device-settings/:topicId", (req, res) => {
     const id = req.params.topicId;
     if (deviceSettings[id]) {
@@ -156,6 +188,7 @@ app.get("/device-settings/:topicId", (req, res) => {
     }
 });
 
+// post route for website to send device settings
 app.post("/device-settings/:topicId", (req, res) => {
     const topicId = req.params.topicId;
     if (!deviceSettings[topicId]) {
