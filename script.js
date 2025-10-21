@@ -22,7 +22,7 @@ const operatorKey = PrivateKey.fromString(process.env.HEDERA_OPERATOR_KEY);
 
 const client = Client.forTestnet().setOperator(operatorId, operatorKey);
 
-const settings = {};
+const subscribers = {};
 
 const deviceSettings = {
     "0.0.7001056": {
@@ -30,20 +30,21 @@ const deviceSettings = {
     },
 };
 
-// fetch settings from database if missing (e.g. after server restart)
-async function fetchSensorSettings(topicId) {
-    console.log("Fetching settings... for topic ", topicId);
+// fetch subscribers from database if missing (e.g. after server restart)
+async function fetchSensorSubscribers(topicId) {
+    console.log("Fetching subscribers for topic... ", topicId);
     try {
         const query = `
-    SELECT *
-    FROM sensors
-    WHERE topicId = $1
-    ORDER BY updatedAt DESC
-    LIMIT 1;
+    SELECT s.*, u.email
+    FROM sensor s
+    JOIN "user" u ON s."subscriberId" = u."id"
+    WHERE s."topicId" = $1
+    ORDER BY s."updatedAt" DESC;
   `;
+
         const { rows } = await pool.query(query, [topicId]);
-        console.log(rows[0]);
-        return rows[0] || null;
+        console.log(rows);
+        return rows;
     } catch (err) {
         console.log(err);
         return {}; // avoids trying to fetch again
@@ -65,29 +66,48 @@ app.post("/data", async (req, res) => {
 
         const message = JSON.stringify(msg);
 
-        // get settings (e.g. after server restart)
-        if (!settings[topicId]) {
-            settings[topicId] = await fetchSensorSettings(topicId);
+        // get subscribers from database if missing (e.g. after server restart)
+        if (!subscribers[topicId]) {
+            const subscribers = await fetchSensorSettings(topicId);
+
+            // add all subscribers from database to subscribers object
+            for (const subscriber of subscribers) {
+                subscribers[subscriber.topicId][subscriber.subscriberId] = subscriber;
+            }
         }
 
-        if (settings[topicId]) {
-            const minTemperature = settings[topicId]["minTemp"] || -9999;
-            const maxTemperature = settings[topicId]["maxTemp"] || 9999;
-            const minHumidity = settings[topicId]["minHum"] || -9999;
-            const maxHumidity = settings[topicId]["maxHum"] || 9999;
-            const minPressure = settings[topicId]["minPres"] || -9999;
-            const maxPressure = settings[topicId]["maxPres"] || 9999;
+        if (subscribers[topicId]) {
+            const topicSubscribers = subscribers[topicId];
+            console.log("Num subscribers: ", topicSubscribers);
 
-            if (temperature < minTemperature || temperature > maxTemperature) {
-                sendEmail(topicId, "Temperature", temperature, minTemperature, maxTemperature, msg.timestamp);
-            }
+            for (const subscriber of topicSubscribers) {
+                const subscriberId = subscriber["subscriberId"];
+                const minTemperature = subscriber["minTemp"] || -9999;
+                const maxTemperature = subscriber["maxTemp"] || 9999;
+                const minHumidity = subscriber["minHum"] || -9999;
+                const maxHumidity = subscriber["maxHum"] || 9999;
+                const minPressure = subscriber["minPres"] || -9999;
+                const maxPressure = subscriber["maxPres"] || 9999;
 
-            if (humidity < minHumidity || humidity > maxHumidity) {
-                sendEmail(topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
-            }
+                if (temperature < minTemperature || temperature > maxTemperature) {
+                    sendEmail(
+                        subscriberId,
+                        topicId,
+                        "Temperature",
+                        temperature,
+                        minTemperature,
+                        maxTemperature,
+                        msg.timestamp,
+                    );
+                }
 
-            if (pressure < minPressure || pressure > maxPressure) {
-                sendEmail(topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
+                if (humidity < minHumidity || humidity > maxHumidity) {
+                    sendEmail(subscriberId, topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
+                }
+
+                if (pressure < minPressure || pressure > maxPressure) {
+                    sendEmail(subscriberId, topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
+                }
             }
         }
 
@@ -103,13 +123,14 @@ app.post("/data", async (req, res) => {
     }
 });
 
-function sendEmail(topicId, metric, value, min, max, timestamp) {
-    if (!settings[topicId]) return;
-    if (!settings[topicId]["email"]) return; // check if email is set
+function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
+    if (!subscribers[topicId]) return;
+    if (!subscribers[topicId][subscriberId]) return;
+    if (!subscribers[topicId][subscriberId]["email"]) return; // check if email is set
 
     // create lastAlert object if it doesn't exist
-    if (!settings[topicId]["lastAlert"]) {
-        settings[topicId]["lastAlert"] = {
+    if (!subscribers[topicId][subscriberId]["lastAlert"]) {
+        subscribers[topicId][subscriberId]["lastAlert"] = {
             Temperature: 0,
             Humidity: 0,
             "Air Pressure": 0,
@@ -117,8 +138,8 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
     }
 
     // check if email has been sent less than 4 hours
-    if (settings[topicId]["lastAlert"][metric]) {
-        if (timestamp < settings[topicId]["lastAlert"][metric] + 4 * 60 * 60 * 1000) {
+    if (subscribers[topicId][subscriberId]["lastAlert"][metric]) {
+        if (timestamp < subscribers[topicId][subscriberId]["lastAlert"][metric] + 4 * 60 * 60 * 1000) {
             console.log("Already send email less than 4 hours ago");
             return;
         }
@@ -128,19 +149,27 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
         const readableDate = new Date(timestamp).toLocaleString();
         const unit = units[metric];
 
-        const subject = `[${settings[topicId]["name"]}] ${metric} out of range (${value})`;
+        const sensorName = subscribers[topicId][subscriberId]["name"]; // get sensor name (given by subscriber)
+        const email = subscribers[topicId][subscriberId]["email"];
+
+        const subject = `[${sensorName}] ${metric} Out of Range`;
         const html = `
-            <p>Value measured at ${readableDate}: ${value} ${unit} exceeding the limits:</p>
-            <p>Min: ${min} ${unit}</p>
-            <p>Max: ${max} ${unit}</p>
-            <p><a href="https://trusense.africa/topic/${topicId}">Inspect the charts.</a></p>
-            <p><a href="https://trusense.africa/login">Login into your Dashboard to update the alerts.</a></p>
+            <p>${metric} Alert for ${sensorName}</p>
+            <p>A temperature reading has exceeded the defined limits.</p>
+            <ul>
+                <li>Measured at: ${readableDate}</li>
+                <li>Recorded value: ${value} ${unit}</li>
+                <li>Acceptable limits: ${min} ${unit} - ${max} ${unit}</li>
+            </ul>
+
+            <p>Please review the <a href="https://trusense.africa/topic/${topicId}">charts</a> for more details.<br>
+<a href="https://trusense.africa/login">Log in</a> to your Dashboard to adjust alert settings or update the limits.</p>
         `;
 
         const text = html.replace(/<[^>]+>/g, "");
 
         const msg = {
-            to: settings[topicId]["email"],
+            to: email,
             from: process.env.MAIL_SENDER,
             subject: subject,
             text: text,
@@ -151,27 +180,32 @@ function sendEmail(topicId, metric, value, min, max, timestamp) {
         sgMail.send(msg);
 
         // store timestamp of mail
-        settings[topicId]["lastAlert"][metric] = timestamp;
+        subscribers[topicId][subscriberId]["lastAlert"][metric] = timestamp;
     } catch (err) {
         console.error(err);
     }
 }
 
-// post route for website to send settings
-app.post("/settings/:topicId", (req, res) => {
+// post route for website to send new topic subscribers
+app.post("/settings/:topicId/:subscriberId", (req, res) => {
     const topicId = req.params.topicId;
+    const subscriberId = req.params.subscriberId;
 
-    // Check if the topic exists
-    if (!settings[topicId]) {
-        // push empty new topic settings
+    // Check if the topic exists, if not, push empty object
+    if (!subscribers[topicId]) {
         settings[topicId] = {};
+    }
+
+    // Check if the subscriber exists, if not, push empty object
+    if (!subscribers[topicId][subscriberId]) {
+        subscribers[topicId][subscriberId] = {};
     }
 
     for (const [key, value] of Object.entries(req.body)) {
         if (value != null) {
-            settings[topicId][key] = value;
-            console.log("Setting stored: " + value);
-            console.log(settings);
+            subscribers[topicId][subscriberId][key] = value;
+            console.log("Setting stored for subscriber: " + subscriberId + ": " + value);
+            console.log(subscribers[topicId][subscriberId]);
         }
     }
 
