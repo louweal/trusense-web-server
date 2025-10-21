@@ -36,7 +36,7 @@ async function fetchSensorSubscribers(topicId) {
     try {
         const query = `
     SELECT s.*, u.email
-    FROM sensor s
+    FROM "Sensor" s
     JOIN "user" u ON s."subscriberId" = u."id"
     WHERE s."topicId" = $1
     ORDER BY s."updatedAt" DESC;
