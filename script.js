@@ -92,17 +92,20 @@ app.post("/data", async (req, res) => {
     // send alerts to subscribers if needed
     if (subscribers[topicId]) {
         const topicSubscribers = subscribers[topicId];
-        console.log("Num subscribers: ", topicSubscribers);
+        console.log("Num subscribers: ", topicSubscribers.length);
 
         if (topicSubscribers.length > 0) {
             for (const subscriber of topicSubscribers) {
                 const subscriberId = subscriber["subscriberId"];
-                const minTemperature = subscriber["minTemp"] || -9999;
-                const maxTemperature = subscriber["maxTemp"] || 9999;
-                const minHumidity = subscriber["minHum"] || -9999;
-                const maxHumidity = subscriber["maxHum"] || 9999;
-                const minPressure = subscriber["minPres"] || -9999;
-                const maxPressure = subscriber["maxPres"] || 9999;
+
+                const minTemperature = subscriber[subscriberId]["minTemp"] || -9999;
+                const maxTemperature = subscriber[subscriberId]["maxTemp"] || 9999;
+                const minHumidity = subscriber[subscriberId]["minHum"] || -9999;
+                const maxHumidity = subscriber[subscriberId]["maxHum"] || 9999;
+                const minPressure = subscriber[subscriberId]["minPres"] || -9999;
+                const maxPressure = subscriber[subscriberId]["maxPres"] || 9999;
+
+                console.log("minTemperature :>> ", minTemperature);
 
                 if (temperature < minTemperature || temperature > maxTemperature) {
                     sendEmail(
