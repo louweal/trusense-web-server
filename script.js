@@ -59,58 +59,11 @@ const units = {
 
 // post route for sensor to send data
 app.post("/data", async (req, res) => {
+    const { topicId, temperature, humidity, pressure } = req.body;
+    const msg = { temperature, humidity, airPressure: pressure, timestamp: Date.now() };
+    const message = JSON.stringify(msg);
+
     try {
-        const { topicId, temperature, humidity, pressure } = req.body;
-
-        const msg = { temperature, humidity, airPressure: pressure, timestamp: Date.now() };
-
-        const message = JSON.stringify(msg);
-
-        // get subscribers from database if missing (e.g. after server restart)
-        if (!subscribers[topicId]) {
-            const subscribers = await fetchSensorSubscribers(topicId);
-
-            // add all subscribers from database to subscribers object
-            for (const subscriber of subscribers) {
-                subscribers[subscriber.topicId][subscriber.subscriberId] = subscriber;
-            }
-        }
-
-        if (subscribers[topicId]) {
-            const topicSubscribers = subscribers[topicId];
-            console.log("Num subscribers: ", topicSubscribers);
-
-            for (const subscriber of topicSubscribers) {
-                const subscriberId = subscriber["subscriberId"];
-                const minTemperature = subscriber["minTemp"] || -9999;
-                const maxTemperature = subscriber["maxTemp"] || 9999;
-                const minHumidity = subscriber["minHum"] || -9999;
-                const maxHumidity = subscriber["maxHum"] || 9999;
-                const minPressure = subscriber["minPres"] || -9999;
-                const maxPressure = subscriber["maxPres"] || 9999;
-
-                if (temperature < minTemperature || temperature > maxTemperature) {
-                    sendEmail(
-                        subscriberId,
-                        topicId,
-                        "Temperature",
-                        temperature,
-                        minTemperature,
-                        maxTemperature,
-                        msg.timestamp,
-                    );
-                }
-
-                if (humidity < minHumidity || humidity > maxHumidity) {
-                    sendEmail(subscriberId, topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
-                }
-
-                if (pressure < minPressure || pressure > maxPressure) {
-                    sendEmail(subscriberId, topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
-                }
-            }
-        }
-
         const tx = await new TopicMessageSubmitTransaction({
             topicId,
             message,
@@ -120,6 +73,52 @@ app.post("/data", async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
+    }
+
+    // get subscribers from database if missing (e.g. after server restart)
+    if (!subscribers[topicId]) {
+        const subscribers = await fetchSensorSubscribers(topicId);
+
+        // add all subscribers from database to subscribers object
+        for (const subscriber of subscribers) {
+            subscribers[subscriber.topicId][subscriber.subscriberId] = subscriber;
+        }
+    }
+
+    // send alerts to subscribers if needed
+    if (subscribers[topicId]) {
+        const topicSubscribers = subscribers[topicId];
+        console.log("Num subscribers: ", topicSubscribers);
+
+        for (const subscriber of topicSubscribers) {
+            const subscriberId = subscriber["subscriberId"];
+            const minTemperature = subscriber["minTemp"] || -9999;
+            const maxTemperature = subscriber["maxTemp"] || 9999;
+            const minHumidity = subscriber["minHum"] || -9999;
+            const maxHumidity = subscriber["maxHum"] || 9999;
+            const minPressure = subscriber["minPres"] || -9999;
+            const maxPressure = subscriber["maxPres"] || 9999;
+
+            if (temperature < minTemperature || temperature > maxTemperature) {
+                sendEmail(
+                    subscriberId,
+                    topicId,
+                    "Temperature",
+                    temperature,
+                    minTemperature,
+                    maxTemperature,
+                    msg.timestamp,
+                );
+            }
+
+            if (humidity < minHumidity || humidity > maxHumidity) {
+                sendEmail(subscriberId, topicId, "Humidity", humidity, minHumidity, maxHumidity, msg.timestamp);
+            }
+
+            if (pressure < minPressure || pressure > maxPressure) {
+                sendEmail(subscriberId, topicId, "Air Pressure", pressure, minPressure, maxPressure, msg.timestamp);
+            }
+        }
     }
 });
 
