@@ -35,13 +35,10 @@ async function fetchSensorSubscribers(topicId) {
     console.log("Fetching subscribers for topic... ", topicId);
     try {
         const query = `
-    SELECT s.*, u.email
-    FROM "Sensor" s
-    JOIN "User" u ON s."subscriberId" = u."id"
-    WHERE s."topicId" = $1
-    ORDER BY s."updatedAt" DESC;
+    SELECT *
+    FROM sensors
+    WHERE topicId = $1
   `;
-
         const { rows } = await pool.query(query, [topicId]);
         console.log(rows);
         return rows;
@@ -107,8 +104,6 @@ app.post("/data", async (req, res) => {
                 const maxHumidity = subscriber["maxHum"] || 9999;
                 const minPressure = subscriber["minPres"] || -9999;
                 const maxPressure = subscriber["maxPres"] || 9999;
-
-                console.log("minTemperature :>> ", minTemperature);
 
                 if (temperature < minTemperature || temperature > maxTemperature) {
                     sendEmail(
@@ -215,7 +210,7 @@ app.post("/settings/:topicId/:subscriberId", (req, res) => {
     for (const [key, value] of Object.entries(req.body)) {
         if (value != null) {
             subscribers[topicId][subscriberId][key] = value;
-            console.log("Setting stored for subscriber: " + subscriberId + ": " + value);
+            // console.log("Setting stored for subscriber: " + subscriberId + ": " + value);
             console.log(subscribers[topicId][subscriberId]);
         }
     }
