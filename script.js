@@ -157,7 +157,7 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
         const readableDate = new Date(timestamp).toLocaleString();
         const unit = units[metric];
 
-        const sensorName = subscribers[topicId][subscriberId]["name"]; // get sensor name (given by subscriber)
+        const sensorName = subscribers[topicId][subscriberId]["name"]; // get sensor name
         const email = subscribers[topicId][subscriberId]["email"];
 
         const subject = `[${sensorName}] ${metric} Out of Range`;
@@ -172,7 +172,8 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
             </ul>
 
             <p>Please review the <a href="https://trusense.africa/topic/${topicId}">data</a> for more details.<br>
-<a href="https://trusense.africa/login">Log in</a> to your Dashboard to adjust alert settings or update the limits.</p>
+<a href="https://trusense.africa/login">Log in</a> to the Dashboard to adjust alert settings. <br>
+You will receive this email again if the value exceeds the limits 4 or more hours from now.</p>
         `;
 
         const text = html.replace(/<[^>]+>/g, "");
