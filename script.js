@@ -173,7 +173,7 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
 
             <p>Please review the <a href="https://trusense.africa/topic/${topicId}">data</a> for more details.<br>
 <a href="https://trusense.africa/login">Log in</a> to the Dashboard to adjust alert settings. <br>
-You will receive this email again if the value exceeds the limits 4 or more hours from now.</p>
+You receive up to 6 emails per day (every 4 hours) from ${sensorName} regarding ${metric} if it exceeds the defined limits.</p>
         `;
 
         const text = html.replace(/<[^>]+>/g, "");
