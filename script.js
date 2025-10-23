@@ -36,7 +36,7 @@ async function fetchSensorSubscribers(topicId) {
     try {
         const query = `
     SELECT *
-    FROM sensors
+    FROM Sensors
     WHERE topicId = $1
   `;
         const { rows } = await pool.query(query, [topicId]);
