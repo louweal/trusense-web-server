@@ -162,15 +162,16 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
 
         const subject = `[${sensorName}] ${metric} Out of Range`;
         const html = `
-            <p>${metric} Alert for ${sensorName}</p>
+            <p><strong>${metric} Alert for ${sensorName}</strong></p>
             <p>A temperature reading has exceeded the defined limits.</p>
             <ul>
                 <li>Measured at: ${readableDate}</li>
                 <li>Recorded value: ${value} ${unit}</li>
-                <li>Acceptable limits: ${min} ${unit} - ${max} ${unit}</li>
+                ${min !== -9999 ? `<li>Minimum ${metric}: ${min} ${unit}</li>` : ""}
+                ${max !== 9999 ? `<li>Maximum ${metric}: ${max} ${unit}</li>` : ""}
             </ul>
 
-            <p>Please review the <a href="https://trusense.africa/topic/${topicId}">charts</a> for more details.<br>
+            <p>Please review the <a href="https://trusense.africa/topic/${topicId}">data</a> for more details.<br>
 <a href="https://trusense.africa/login">Log in</a> to your Dashboard to adjust alert settings or update the limits.</p>
         `;
 
