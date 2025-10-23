@@ -36,7 +36,7 @@ async function fetchSensorSubscribers(topicId) {
     try {
         const query = `
     SELECT *
-    FROM Sensor
+    FROM "Sensor"
     WHERE topicId = $1
   `;
         const { rows } = await pool.query(query, [topicId]);
@@ -77,10 +77,12 @@ app.post("/data", async (req, res) => {
         // create subscribers object
 
         const subscriberData = await fetchSensorSubscribers(topicId);
+        if (!subscriberData) return;
 
         subscribers[topicId] = {}; // create empty object
 
         // add all subscribers from database to subscribers object
+
         for (const s of subscriberData) {
             subscribers[s.topicId][s.subscriberId] = s;
         }
