@@ -243,7 +243,7 @@ app.post("/device-settings/:topicId", (req, res) => {
     for (const [key, value] of Object.entries(req.body)) {
         if (value != null) {
             deviceSettings[topicId][key] = value;
-            // console.log("Updated device settings: " + key + ":" + value);
+            console.log("Updated device settings: " + key + ":" + value);
         }
     }
 
