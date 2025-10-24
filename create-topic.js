@@ -24,9 +24,9 @@ async function main() {
 
         // Extract Topic ID
         const topicId = receipt.topicId.toString();
-        console.log("✅ New topic created with ID:", topicId);
+        console.log("New topic created with ID:", topicId);
     } catch (err) {
-        console.error("❌ Error creating topic:", err);
+        console.error("Error creating topic:", err);
     }
 
     // Close the client

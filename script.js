@@ -32,7 +32,7 @@ const deviceSettings = {
 
 // fetch subscribers from database if missing (e.g. after server restart)
 async function fetchSensorSubscribers(topicId) {
-    console.log("Fetching subscribers for topic... ", topicId);
+    // console.log("Fetching subscribers for topic... ", topicId);
     try {
         const query = `
     SELECT *
@@ -40,7 +40,7 @@ async function fetchSensorSubscribers(topicId) {
     WHERE "topicId" = $1
   `;
         const { rows } = await pool.query(query, [topicId]);
-        console.log(rows);
+        // console.log(rows);
         return rows;
     } catch (err) {
         console.log(err);
@@ -93,7 +93,7 @@ app.post("/data", async (req, res) => {
         const topicSubscribers = subscribers[topicId];
         const numTopicSubscribers = Object.keys(topicSubscribers).length;
 
-        console.log("Num subscribers: ", numTopicSubscribers);
+        // console.log("Num subscribers: ", numTopicSubscribers);
 
         if (numTopicSubscribers > 0) {
             // loop through all subscribers
@@ -148,7 +148,7 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
     // check if email has been sent less than 4 hours
     if (subscribers[topicId][subscriberId]["lastAlert"][metric]) {
         if (timestamp < subscribers[topicId][subscriberId]["lastAlert"][metric] + 4 * 60 * 60 * 1000) {
-            console.log("Already send email less than 4 hours ago");
+            // console.log("Already send email less than 4 hours ago");
             return;
         }
     }
@@ -186,7 +186,7 @@ You receive up to 6 emails per day (every 4 hours) from ${sensorName} regarding 
             html: html,
         };
 
-        console.log("Going to send email:", subject);
+        console.log("Sending email to: " + email);
         sgMail.send(msg);
 
         // store timestamp of mail
@@ -215,7 +215,7 @@ app.post("/settings/:topicId/:subscriberId", (req, res) => {
         if (value != null) {
             subscribers[topicId][subscriberId][key] = value;
             // console.log("Setting stored for subscriber: " + subscriberId + ": " + value);
-            console.log(subscribers[topicId][subscriberId]);
+            // console.log(subscribers[topicId][subscriberId]);
         }
     }
 
@@ -243,7 +243,7 @@ app.post("/device-settings/:topicId", (req, res) => {
     for (const [key, value] of Object.entries(req.body)) {
         if (value != null) {
             deviceSettings[topicId][key] = value;
-            console.log("Updated device settings: " + key + ":" + value);
+            // console.log("Updated device settings: " + key + ":" + value);
         }
     }
 
