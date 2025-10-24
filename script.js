@@ -165,7 +165,7 @@ function sendEmail(subscriberId, topicId, metric, value, min, max, timestamp) {
             <p><strong>${metric} Alert for ${sensorName}</strong></p>
             <p>A temperature reading has exceeded the defined limits.</p>
             <ul>
-                <li>Measured at: ${readableDate}</li>
+                <li>Measured at: ${readableDate} (UTC)</li>
                 <li>Recorded value: ${value} ${unit}</li>
                 ${min !== -9999 ? `<li>Minimum ${metric}: ${min} ${unit}</li>` : ""}
                 ${max !== 9999 ? `<li>Maximum ${metric}: ${max} ${unit}</li>` : ""}
